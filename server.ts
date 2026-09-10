@@ -10,6 +10,15 @@ import nodemailer from 'nodemailer';
 const PORT = 3000;
 const UPLOADS_DIR = path.join(process.cwd(), 'uploads');
 
+// Prevent unexpected process exits on unhandled errors or closed sockets
+process.on('uncaughtException', (err) => {
+  console.error('[Process] Uncaught exception caught safely:', err);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('[Process] Unhandled rejection caught safely:', reason);
+});
+
 // Email configuration
 const transporter = nodemailer.createTransport({
   service: 'gmail',
@@ -161,6 +170,13 @@ async function startServer() {
         'Content-Type': 'application/octet-stream',
       };
       res.writeHead(206, head);
+      file.on('error', (streamErr) => {
+        console.warn('[Stream] Range read error on client abort:', streamErr.message);
+        if (!res.headersSent) res.status(500).end();
+      });
+      res.on('close', () => {
+        file.destroy();
+      });
       file.pipe(res);
     } else {
       const head = {
@@ -169,7 +185,15 @@ async function startServer() {
         'Content-Disposition': `attachment; filename="${req.params.filename.split('-').slice(2).join('-')}"`
       };
       res.writeHead(200, head);
-      fs.createReadStream(filePath).pipe(res);
+      const fullStream = fs.createReadStream(filePath);
+      fullStream.on('error', (streamErr) => {
+        console.warn('[Stream] Full read error on client abort:', streamErr.message);
+        if (!res.headersSent) res.status(500).end();
+      });
+      res.on('close', () => {
+        fullStream.destroy();
+      });
+      fullStream.pipe(res);
     }
   });
 
@@ -217,38 +241,58 @@ async function startServer() {
 
     let registeredPeerId: string | null = null;
 
+    ws.on('error', (wsErr) => {
+      console.warn('[WS] Client socket connection error:', wsErr.message);
+    });
+
     ws.on('message', (messageData) => {
       try {
         const raw = messageData.toString();
         const data = JSON.parse(raw);
 
+        if (typeof data !== 'object' || data === null) return;
+
         if (data.type === 'register-peer') {
           const { peerId, name } = data;
-          registeredPeerId = peerId;
-          peers.set(peerId, { ws, name });
-          console.log(`Peer registered: ${name} (${peerId})`);
-          broadcastPeers();
+          if (typeof peerId === 'string' && peerId.length <= 128) {
+            registeredPeerId = peerId;
+            const sanitizedName = typeof name === 'string' ? name.slice(0, 50) : 'Device';
+            peers.set(peerId, { ws, name: sanitizedName });
+            broadcastPeers();
+          }
         } 
         else if (data.type === 'webrtc-signal') {
           const { to, signal } = data;
-          const target = peers.get(to);
-          if (target && target.ws.readyState === WebSocket.OPEN) {
-            target.ws.send(JSON.stringify({
-              type: 'webrtc-signal',
-              from: registeredPeerId,
-              signal
-            }));
+          if (typeof to === 'string' && peers.has(to)) {
+            const target = peers.get(to);
+            if (target && target.ws.readyState === WebSocket.OPEN) {
+              try {
+                target.ws.send(JSON.stringify({
+                  type: 'webrtc-signal',
+                  from: registeredPeerId,
+                  signal
+                }));
+              } catch (sendErr) {
+                console.warn('[WS] Failed to send webrtc-signal to peer:', sendErr);
+              }
+            }
           }
         }
         else if (data.type === 'relay-message') {
           const { to, payload } = data;
-          const target = peers.get(to);
-          if (target && target.ws.readyState === WebSocket.OPEN) {
-            target.ws.send(JSON.stringify({
-              type: 'relay-message',
-              from: registeredPeerId,
-              payload
-            }));
+          if (typeof to === 'string' && peers.has(to)) {
+            const target = peers.get(to);
+            if (target && target.ws.readyState === WebSocket.OPEN) {
+              try {
+                target.ws.send(JSON.stringify({
+                  type: 'relay-message',
+                  from: registeredPeerId,
+                  payload
+                }));
+              } catch (sendErr) {
+                console.warn('[WS] Failed to send relay-message to peer:', sendErr);
+              }
+            }
           }
         }
       } catch (err) {
@@ -285,8 +329,12 @@ async function startServer() {
     const realCount = activeUsers.size;
     const message = JSON.stringify({ type: 'count', value: realCount, fakeBase });
     wss.clients.forEach((client) => {
-      if (client.readyState === WebSocket.OPEN) {
-        client.send(message);
+      try {
+        if (client.readyState === WebSocket.OPEN) {
+          client.send(message);
+        }
+      } catch (e) {
+        console.error('[WS] Error sending count broadcast:', e);
       }
     });
   }
@@ -298,8 +346,12 @@ async function startServer() {
     }));
     const message = JSON.stringify({ type: 'peers-list', peers: list });
     peers.forEach((p) => {
-      if (p.ws.readyState === WebSocket.OPEN) {
-        p.ws.send(message);
+      try {
+        if (p.ws.readyState === WebSocket.OPEN) {
+          p.ws.send(message);
+        }
+      } catch (e) {
+        console.error('[WS] Error sending peer broadcast:', e);
       }
     });
   }

@@ -79,7 +79,8 @@ import {
   Key,
   User as UserIcon,
   Activity as ActivityIcon,
-  ShieldCheck
+  ShieldCheck,
+  FolderGit2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { format } from 'date-fns';
@@ -89,6 +90,8 @@ import { generateLogo } from './services/logoGenerator';
 import { copyToClipboard } from './utils/clipboard';
 import OfflineP2PShare from './components/OfflineP2PShare';
 import OppoFileDock from './components/OppoFileDock';
+import { GitHubSyncModal } from './components/GitHubSyncModal';
+import { triggerAutoSyncIfEnabled } from './lib/githubSync';
 import { encryptFile, decryptFile } from './lib/encryption';
 import { getFirebaseStorage, storageRef, uploadBytesResumable, getDownloadURL } from './lib/firebase';
 import { getApiUrl } from './config/api';
@@ -945,6 +948,7 @@ export default function App() {
   const [showOfflineShare, setShowOfflineShare] = useState(false);
   const [initialP2pFile, setInitialP2pFile] = useState<File | null>(null);
   const [showOnlineShareModal, setShowOnlineShareModal] = useState(false);
+  const [showGitHubSyncModal, setShowGitHubSyncModal] = useState(false);
 
   const [folders, setFolders] = useState<FolderMetadata[]>([]);
   const [dragOverFolderId, setDragOverFolderId] = useState<string | null>(null);
@@ -1829,7 +1833,11 @@ export default function App() {
               console.warn('Could not sync file to Firestore:', err);
             }
           }
-          setFiles(prev => [fileMetadata, ...prev.filter(f => f.id !== fileMetadata.id)]);
+          setFiles(prev => {
+            const updated = [fileMetadata, ...prev.filter(f => f.id !== fileMetadata.id)];
+            triggerAutoSyncIfEnabled(updated, fileMetadata.name);
+            return updated;
+          });
           addActivity('upload', fileMetadata.name);
           setUploads(prev => prev.map(u => u.id === uploadId ? { ...u, status: 'completed', progress: 100 } : u));
           setShareFile(fileMetadata);
@@ -2504,6 +2512,15 @@ export default function App() {
                   </div>
                   
                   <div className="flex items-center gap-2">
+                    <button 
+                      onClick={() => setShowGitHubSyncModal(true)}
+                      className="px-3 py-1.5 rounded-xl bg-zinc-900 border border-emerald-500/30 hover:border-emerald-400 text-zinc-200 hover:text-white font-bold text-xs flex items-center gap-1.5 transition-all shadow-sm active:scale-95"
+                      title="GitHub Vault Sync & Deploy Helper"
+                    >
+                      <FolderGit2 className="w-3.5 h-3.5 text-emerald-400" />
+                      <span className="hidden md:inline">GitHub Sync</span>
+                    </button>
+
                     <button 
                       onClick={() => setShowOfflineShare(true)}
                       className="px-3 py-1.5 rounded-xl bg-accent text-black font-bold text-xs flex items-center gap-1.5 shadow-md shadow-accent/20 hover:brightness-110 active:scale-95 transition-all"
@@ -4525,6 +4542,13 @@ export default function App() {
         externalModal={showLegalModal} 
         onCloseExternal={() => setShowLegalModal(null)} 
         logoUrl={logoUrl}
+      />
+
+      {/* GitHub Vault Cloud Sync & Auto-Deploy Modal */}
+      <GitHubSyncModal 
+        isOpen={showGitHubSyncModal}
+        onClose={() => setShowGitHubSyncModal(false)}
+        vaultFiles={files}
       />
       </div>
     </ErrorBoundary>

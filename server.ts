@@ -6,6 +6,7 @@ import fs from 'fs-extra';
 import { createServer } from 'http';
 import { WebSocketServer, WebSocket } from 'ws';
 import nodemailer from 'nodemailer';
+import compression from 'compression';
 
 const PORT = 3000;
 const UPLOADS_DIR = path.join(process.cwd(), 'uploads');
@@ -70,6 +71,9 @@ const upload = multer({
 
 async function startServer() {
   const app = express();
+
+  // High performance compression
+  app.use(compression());
 
   // Enable CORS for custom domain & external origins
   app.use((req, res, next) => {
@@ -200,7 +204,7 @@ async function startServer() {
   // Permanent storage: No auto-deletion or expiration job
   // All uploaded files are preserved permanently without expiry
 
-  // --- Vite Middleware ---
+  // --- Vite Middleware & Static Serving ---
   if (process.env.NODE_ENV !== 'production') {
     console.log('Starting in development mode with Vite middleware...');
     const vite = await createViteServer({
@@ -214,13 +218,26 @@ async function startServer() {
     console.log('Resolved distPath:', distPath);
     if (fs.existsSync(distPath)) {
       console.log('Serving static files from:', distPath);
-      app.use(express.static(distPath));
-      app.get('*', (req, res) => {
+      app.use(express.static(distPath, {
+        maxAge: '1d',
+        index: false
+      }));
+
+      // Prevent 404 assets from returning index.html
+      app.use('/assets', (req, res) => {
+        res.status(404).send('Asset not found');
+      });
+
+      app.get('*', (req, res, next) => {
+        if (req.path.startsWith('/api') || req.path.startsWith('/ws')) {
+          return next();
+        }
+        res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
         res.sendFile(path.join(distPath, 'index.html'));
       });
     } else {
       console.error('CRITICAL: Production mode enabled but dist folder not found at:', distPath);
-      console.log('Falling back to Vite middleware (this will be slow)...');
+      console.log('Falling back to Vite middleware...');
       const vite = await createViteServer({
         server: { middlewareMode: true },
         appType: 'spa',

@@ -118,14 +118,34 @@
   </head>
   <body>
     <div id="root">
-      <div style="min-height: 100vh; background-color: #030303; display: flex; align-items: center; justify-content: center; color: #00FF9D; font-family: system-ui, -apple-system, sans-serif;">
-        <div style="text-align: center;">
+      <div id="velorix-loader" style="min-height: 100vh; background-color: #030303; display: flex; align-items: center; justify-content: center; color: #00FF9D; font-family: system-ui, -apple-system, sans-serif;">
+        <div style="text-align: center; max-width: 360px; padding: 20px;">
           <div style="width: 48px; height: 48px; border: 3px solid rgba(0, 255, 157, 0.2); border-top-color: #00FF9D; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 16px auto;"></div>
           <div style="font-weight: 800; letter-spacing: 0.15em; font-size: 14px; text-transform: uppercase;">VELORIX</div>
-          <div style="font-size: 11px; color: #71717a; margin-top: 4px;">Loading Secure Vault...</div>
+          <div id="loader-subtext" style="font-size: 11px; color: #71717a; margin-top: 4px;">Loading Secure Vault...</div>
+          
+          <div id="loader-fallback" style="display: none; margin-top: 18px;">
+            <p style="font-size: 12px; color: #a1a1aa; margin-bottom: 12px; line-height: 1.5;">
+              Connection taking longer than expected. If self-hosting on DuckDNS, ensure your Node server is running.
+            </p>
+            <button onclick="window.location.reload()" style="background: #00FF9D; color: #000; border: none; padding: 8px 16px; border-radius: 8px; font-size: 12px; font-weight: bold; cursor: pointer;">
+              Retry Connection
+            </button>
+          </div>
         </div>
       </div>
     </div>
+    <script>
+      // Graceful timeout check for slow or disconnected server hosts
+      setTimeout(function() {
+        var loader = document.getElementById('loader-fallback');
+        var subtext = document.getElementById('loader-subtext');
+        if (loader && document.getElementById('velorix-loader')) {
+          loader.style.display = 'block';
+          if (subtext) subtext.innerText = 'Connecting to server...';
+        }
+      }, 5000);
+    </script>
     <style>
       @keyframes spin {
         to { transform: rotate(360deg); }

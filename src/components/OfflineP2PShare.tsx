@@ -13,7 +13,7 @@ import { copyToClipboard } from '../utils/clipboard';
 import { getWsUrl } from '../config/api';
 import { GLOBAL_ICE_SERVERS } from '../config/iceServers';
 
-interface ConnectionPeer {
+interface ConnectionPeer {import { GLOBAL_ICE_SERVERS } from '../config/iceServers';
   id: string;
   name: string;
   pin?: string;
@@ -487,7 +487,7 @@ export default function OfflineP2PShare({ onClose, currentUserDisplayName, initi
       return null;
     }
   };
-
+const pc = new RTCPeerConnection(GLOBAL_ICE_SERVERS);
   // Generate WebRTC peer pipeline with fallback logic
   const createPeerConnection = (targetPeerId: string | null) => {
     const pc = new RTCPeerConnection(GLOBAL_ICE_SERVERS);

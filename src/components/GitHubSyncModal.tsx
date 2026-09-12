@@ -399,6 +399,26 @@ export const GitHubSyncModal: React.FC<GitHubSyncModalProps> = ({ isOpen, onClos
                     </a>
                   )}
                 </div>
+
+                {/* Cloudflare Pages Deployment & Lockfile Troubleshooting Helper */}
+                <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-zinc-300 space-y-2 mt-4">
+                  <div className="flex items-center gap-2 text-amber-400 text-xs font-bold">
+                    <AlertCircle className="w-4 h-4 shrink-0" />
+                    <span>Cloudflare Pages Deploy Tip: Fixing "Unknown lockfile version"</span>
+                  </div>
+                  <p className="text-[11px] leading-relaxed text-zinc-300">
+                    If you see <strong><code>error: Unknown lockfile version</code></strong> during Cloudflare Pages deployment, it happens when an outdated Node/NPM/Bun version tries to parse modern lockfiles.
+                  </p>
+                  <div className="p-2.5 bg-black/40 rounded-xl border border-white/5 text-[11px] space-y-1">
+                    <p className="font-semibold text-white">How to fix in Cloudflare Pages:</p>
+                    <ol className="list-decimal list-inside space-y-0.5 text-zinc-400">
+                      <li>Go to <strong>Cloudflare Dashboard</strong> &rarr; <strong>Workers & Pages</strong> &rarr; Your Project.</li>
+                      <li>Go to <strong>Settings</strong> &rarr; <strong>Environment Variables</strong> (or Build Settings).</li>
+                      <li>Set variable <code>NODE_VERSION</code> to <code>20</code> (or higher, e.g. <code>20.18.0</code>).</li>
+                      <li>Set Build Command to <code>npm run build</code> and Output Directory to <code>dist</code>.</li>
+                    </ol>
+                  </div>
+                </div>
               </div>
             </div>
           )}

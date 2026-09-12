@@ -87,6 +87,20 @@ async function startServer() {
     next();
   });
 
+  // Automatic 301 Redirect from DuckDNS host to Canonical GitHub Pages App (allowing API routes for backend services)
+  app.use((req, res, next) => {
+    const host = (req.headers.host || req.hostname || '').toLowerCase();
+    if (host.includes('share-files-rd.duckdns.org') || host.includes('duckdns.org')) {
+      if (!req.path.startsWith('/api/') && req.method === 'GET') {
+        const rawPath = req.originalUrl || req.url || '';
+        const cleanPath = rawPath.startsWith('/') ? rawPath.slice(1) : rawPath;
+        const targetUrl = `https://velorix-rd.github.io/Valorix/${cleanPath}`;
+        return res.redirect(301, targetUrl);
+      }
+    }
+    next();
+  });
+
   app.use(express.json());
 
   // --- API Routes ---

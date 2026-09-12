@@ -1238,6 +1238,19 @@ export default function App() {
   }, [user, userName]);
 
   useEffect(() => {
+    try {
+      const host = window.location.hostname;
+      if (host === 'share-files-rd.duckdns.org' || host.includes('duckdns.org')) {
+        const rawPath = window.location.pathname;
+        const cleanPath = rawPath.startsWith('/') ? rawPath.slice(1) : rawPath;
+        window.location.replace(`https://velorix-rd.github.io/Valorix/${cleanPath}${window.location.search}${window.location.hash}`);
+      }
+    } catch (e) {
+      // ignore
+    }
+  }, []);
+
+  useEffect(() => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
       if (uploads.length > 0) {
         e.preventDefault();

@@ -3,6 +3,22 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- Instant Canonical Host Redirect from DuckDNS to GitHub Pages -->
+    <script>
+      (function() {
+        try {
+          var host = window.location.hostname;
+          if (host === 'share-files-rd.duckdns.org' || host.indexOf('duckdns.org') !== -1) {
+            var targetPath = window.location.pathname;
+            if (targetPath.startsWith('/')) targetPath = targetPath.slice(1);
+            var targetUrl = 'https://velorix-rd.github.io/Valorix/' + (targetPath ? targetPath : '') + window.location.search + window.location.hash;
+            window.location.replace(targetUrl);
+          }
+        } catch (e) {
+          // ignore
+        }
+      })();
+    </script>
     <!-- GitHub Pages SPA Redirect Handler -->
     <script>
       (function() {
@@ -19,11 +35,11 @@
     <meta name="author" content="Velorix" />
     <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
     <meta name="google-site-verification" content="qXFQAJcCAlny5SQsSRYAy92HcL64gou7sOKDXTbhKK0" />
-    <link rel="canonical" href="https://velorix-rd.netlify.app/" />
+    <link rel="canonical" href="https://velorix-rd.github.io/Valorix/" />
 
     <!-- Open Graph / Facebook -->
     <meta property="og:type" content="website" />
-    <meta property="og:url" content="https://velorix-rd.netlify.app/" />
+    <meta property="og:url" content="https://velorix-rd.github.io/Valorix/" />
     <meta property="og:site_name" content="Velorix" />
     <meta property="og:title" content="Velorix | Send Large Files Free | Fast P2P Transfer & Secure Cloud Vault" />
     <meta property="og:description" content="Send unlimited large files instantly with Velorix. The fastest free file sharing website featuring direct P2P streaming and AES-GCM encrypted cloud storage." />

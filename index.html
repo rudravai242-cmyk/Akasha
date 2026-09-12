@@ -3,17 +3,13 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <!-- Instant Canonical Host Redirect from DuckDNS to Netlify -->
+    <!-- GitHub Pages SPA Redirect Handler -->
     <script>
       (function() {
-        try {
-          var host = window.location.hostname;
-          if (host === 'share-files-rd.duckdns.org' || host.indexOf('share-files-rd.duckdns.org') !== -1) {
-            var target = 'https://velorix-rd.netlify.app' + window.location.pathname + window.location.search + window.location.hash;
-            window.location.replace(target);
-          }
-        } catch (e) {
-          // ignore
+        var redirect = sessionStorage.redirect;
+        delete sessionStorage.redirect;
+        if (redirect && redirect !== location.href) {
+          history.replaceState(null, null, redirect);
         }
       })();
     </script>

@@ -1238,16 +1238,6 @@ export default function App() {
   }, [user, userName]);
 
   useEffect(() => {
-    try {
-      if (window.location.hostname === 'share-files-rd.duckdns.org') {
-        window.location.replace('https://velorix-rd.netlify.app' + window.location.pathname + window.location.search + window.location.hash);
-      }
-    } catch (e) {
-      // ignore
-    }
-  }, []);
-
-  useEffect(() => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
       if (uploads.length > 0) {
         e.preventDefault();
